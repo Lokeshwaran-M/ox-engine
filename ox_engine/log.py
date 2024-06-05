@@ -1,112 +1,112 @@
 import os
 import json
 from datetime import datetime
-from ox_engine  import do
+from ox_engine import do
+
 
 class Log:
 
-    def __init__(self,db=""):
+    def __init__(self, db=""):
         """
-        initiate instances of the db.ox-db 
+        Initiate instances of the db.ox-db
 
         Args:
-            db (str): the name of th db or path/name that get accesed or instantiated
-
+            db (str, optional): The name of the db or path/name that gets accessed or instantiated. Defaults to "".
         Returns:
-            None   
+            None
         """
-        self.fd_path = os.path.join(os.path.expanduser("~"),db+".ox-db" )
-        do.mk_fd(self.fd_path)
+        self.db_path = os.path.join(os.path.expanduser("~"), db + ".ox-db")
+        do.mk_fd(self.db_path)
 
- 
-    def push(self, data):
+    def push(
+        self,
+        data,
+        key=datetime.now().strftime("%I:%M:%S-%p"),
+        tag=datetime.now().strftime("%d-%m-%Y"),
+    ):
         """
-        Pushes the given input to a ox.db file with the current date and time.
+        Pushes data to the log file. Can be called with either data or both key and data.
 
         Args:
-            data (any): The data to be logged.
-
+            data (any, optional): The data to be logged.
+            key (str, optional): The key for the log entry. Defaults to eg: ("04-06-2024") current_date
+            tag (str, optional): The tag for the log entry. Defaults to eg: ("10:30:00-AM") current_time with AM/PM
         Returns:
             None
         """
 
-        current_time = datetime.now().strftime("%I:%M:%S-%p")  # Accurate time with AM/PM
-        current_date = datetime.now().strftime('%d-%m-%Y')
-        log_file = f"{current_date}.json"
-        filepath = os.path.join(self.fd_path, log_file)
+        log_file = f"{tag}.json"
+        file_db_path = os.path.join(self.db_path, log_file)
 
         try:
-            with open(filepath, 'r+') as file:  # Open in append mode
-                content = json.load(file) if os.path.getsize(filepath) > 0 else {}
-                content[current_time] = data
+            with open(file_db_path, "r+") as file:  # Open in append mode
+                content = json.load(file) if os.path.getsize(file_db_path) > 0 else {}
+                content[key] = data
                 file.seek(0)  # Move to the beginning of the file
                 json.dump(content, file, indent=4)  # Formatted JSON
 
-        except (FileNotFoundError, json.JSONDecodeError):  # Handle missing file or invalid JSON
-            with open(filepath, 'w') as file:
-                json.dump({current_time: data}, file, indent=4)
+        except (
+            FileNotFoundError,
+            json.JSONDecodeError,
+        ):  # Handle missing file or invalid JSON
+            with open(file_db_path, "w") as file:
+                json.dump({key: data}, file, indent=4)
 
-        print(f"logged data : log {current_time} {log_file}.json path={filepath}")
+        print(f"logged data : {key} {log_file} \npath={file_db_path}")
 
-    def pull(self, time:str=None, date=datetime.now().strftime('%d-%m-%Y')):
+    def pull(self, key=None, tag=datetime.now().strftime("%d-%m-%Y")):
         """
         Retrieves a specific log entry from a JSON file based on date and time.
 
         Args:
-            time (str): The time of the log entry in the format used by push (e.g., "10:30:00-AM").
-            date (str): The date of the log entry in the format used by push (e.g., "04-06-2024").
-
+            key (any or optional): datakey or The time of the log entry in the format used by push eg: ("10:30:00-AM").
+            tag (any or optional): tag or date of the log entry in the format used by push eg: ("04-06-2024").
         Returns:
-            any: The log data associated with the specified time and date, or None if not found.
+            any: The log data associated with the specified key,time and tag,date or None if not found.
         """
 
-        log_file = f"{date}.json"
-        filepath = os.path.join(self.fd_path, log_file)
-        log_entries = [] 
+        log_file = f"{tag}.json"
+        file_db_path = os.path.join(self.db_path, log_file)
+        log_entries = []
 
-        ip = datetime.now().strftime('%p')
+        ip = datetime.now().strftime("%p")
         itime = ""
-        if(time is None):
+        if key is None:
             pass
-        elif("-" in time):
-            itime,ip = time.split("-")
+        elif "-" in key:
+            itime, ip = key.split("-")
         else:
-            itime=time
-        itime_arr= itime.split(":")
+            itime = key
+        itime_arr = itime.split(":")
         itime_arr.append(ip)
         try:
-            with open(filepath, 'r') as file:  # Open in read mode
+            with open(file_db_path, "r") as file:  # Open in read mode
 
                 content = json.load(file)
-               
-                if not time:  
-                    for log_key, data in content.items():
-                        log_entries.append({"key": log_key, "data": data})
-                elif time in content:  
-                    data =content[time]
-                    log_entries.append({"key": time, "data": data})
-                elif(len(time)>0) :
-                    for log_key, data in content.items():
-                        log_time,log_p = log_key.split("-")
-                        log_h, log_m, log_s= log_time.split(":")
 
-                        if [log_h,log_p] ==itime_arr:
-                            log_entries.append({"key": log_key, "data": data})
-                        if [log_h, log_m,log_p] ==itime_arr:
-                            log_entries.append({"key": log_key, "data": data})
-                  
+                if key is None:
+                    for log_key, data in content.items():
+                        log_entries.append({"tag": tag, "key": log_key, "data": data})
+                elif key in content:
+                    data = content[key]
+                    log_entries.append({"tag": tag, "key": key, "data": data})
+                elif len(key) > 0:
+                    for log_key, data in content.items():
+                        log_time, log_p = log_key.split("-")
+                        log_h, log_m, log_s = log_time.split(":")
 
-                      # Log entry not found
+                        if [log_h, log_p] == itime_arr:
+                            log_entries.append({"tag": tag, "key": log_key, "data": data})
+                        if [log_h, log_m, log_p] == itime_arr:
+                            log_entries.append({"tag": tag, "key": log_key, "data": data})
+
+                    # Log entry not found
 
         except (FileNotFoundError, json.JSONDecodeError):
             # Handle missing file or invalid JSON
             # Indicate log entry not found
-            print(f"Unable to locate log entry for {time} on {date}.")  # Optional message for missing entry
-      
+            print(
+                f"Unable to locate log entry for {key} on {tag}."
+            )  # Optional message for missing entry
+
         return log_entries
-
-       
-
-
-
-
