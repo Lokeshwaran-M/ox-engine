@@ -5,14 +5,23 @@ from ox_engine  import do
 
 class Log:
 
-    def __init__(self):
-        self.fd_path = os.path.join(os.path.expanduser("~"), "ox.db")
+    def __init__(self,db=""):
+        """
+        initiate instances of the db.ox-db 
+
+        Args:
+            db (str): the name of th db or path/name that get accesed or instantiated
+
+        Returns:
+            None   
+        """
+        self.fd_path = os.path.join(os.path.expanduser("~"),db+".ox-db" )
         do.mk_fd(self.fd_path)
 
  
     def push(self, data):
         """
-        Pushes the given input to a JSON file with the current date and time.
+        Pushes the given input to a ox.db file with the current date and time.
 
         Args:
             data (any): The data to be logged.
@@ -39,7 +48,7 @@ class Log:
 
         print(f"logged data : log {current_time} {log_file}.json path={filepath}")
 
-    def pull(self, time=None, date=datetime.now().strftime('%d-%m-%Y')):
+    def pull(self, time:str=None, date=datetime.now().strftime('%d-%m-%Y')):
         """
         Retrieves a specific log entry from a JSON file based on date and time.
 
@@ -56,8 +65,10 @@ class Log:
         log_entries = [] 
 
         ip = datetime.now().strftime('%p')
-        itime = 0
-        if("-" in time):
+        itime = ""
+        if(time is None):
+            pass
+        elif("-" in time):
             itime,ip = time.split("-")
         else:
             itime=time
@@ -69,7 +80,8 @@ class Log:
                 content = json.load(file)
                
                 if not time:  
-                    log_entries.extend(content.values())
+                    for log_key, data in content.items():
+                        log_entries.append({"key": log_key, "data": data})
                 elif time in content:  
                     data =content[time]
                     log_entries.append({"key": time, "data": data})
@@ -79,9 +91,9 @@ class Log:
                         log_h, log_m, log_s= log_time.split(":")
 
                         if [log_h,log_p] ==itime_arr:
-                            log_entries.append({"key": log_time, "data": data})
+                            log_entries.append({"key": log_key, "data": data})
                         if [log_h, log_m,log_p] ==itime_arr:
-                            log_entries.append({"key": log_time, "data": data})
+                            log_entries.append({"key": log_key, "data": data})
                   
 
                       # Log entry not found
@@ -90,7 +102,7 @@ class Log:
             # Handle missing file or invalid JSON
             # Indicate log entry not found
             print(f"Unable to locate log entry for {time} on {date}.")  # Optional message for missing entry
-        print(log_entries)
+      
         return log_entries
 
        

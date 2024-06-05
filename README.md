@@ -6,7 +6,7 @@ ox-engine core of assistant work flow and a prompt data processer engine
 
 
 ```
-pip install ox_engine
+pip install ox-engine
 ```
 ### source :
 
