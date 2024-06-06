@@ -11,7 +11,7 @@ pip install ox-engine
 ### source :
 
 ```
-pip install https://github.com/ox-ai/ox-engine.git
+pip install git+https://github.com/ox-ai/ox-engine.git
 ```
 
 ## docs :
