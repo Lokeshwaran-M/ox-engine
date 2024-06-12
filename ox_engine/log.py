@@ -7,6 +7,15 @@ from datetime import datetime
 class Log:
 
     def __init__(self, db=""):
+        """
+        Initiate instances of the db.ox-db
+        
+        Args:
+            db (str, optional): The name of the db or path/name that gets accessed or instantiated. Defaults to "".
+        
+        Returns:
+            None
+        """
         self.db_path = os.path.join(os.path.expanduser("~"), db + ".ox-db")
         os.makedirs(self.db_path, exist_ok=True)  # Create directory if it doesn't exist
 
@@ -18,6 +27,17 @@ class Log:
             raise ValueError("doc_format must be 'bson' or 'json'")
 
     def push(self, data, key=None, doc=None, doc_format="bson"):
+        """
+        Pushes data to the log file. Can be called with either data or both key and data.
+        
+        Args:
+            data (any, optional): The data to be logged.
+            key (str, optional): The key for the log entry. Defaults to eg: ("04-06-2024") current_date
+            doc (str, optional): The doc for the log entry. Defaults to eg: ("10:30:00-AM") current_time with AM/PM
+        
+        Returns:
+            None
+        """
         self._validate_doc_format(doc_format)
 
         if key is None:
@@ -34,12 +54,22 @@ class Log:
                 self._save_content(file, content, doc_format)
 
         except FileNotFoundError:
-            with open(log_file, doc_format + "wb" if doc_format == 'bson' else doc_format + "w") as file:
+            with open(log_file, "wb" if doc_format == 'bson' else  "w") as file:
                 self._save_content(file, {key: data}, doc_format)
 
         print(f"logged data : {key} \n{log_file}")
 
     def pull(self, key=None, doc=None, doc_format="bson"):
+        """
+        Retrieves a specific log entry from a BSON or JSON file based on date and time.
+        
+        Args:
+            key (any or optional): datakey or The time of the log entry in the format used by push eg: ("10:30:00-AM").
+            doc (any or optional): doc or date of the log entry in the format used by push eg: ("04-06-2024").
+        
+        Returns:
+            any: The log data associated with the specified key,time and doc,date or None if not found.
+        """
         self._validate_doc_format(doc_format)
 
         if doc is None:
