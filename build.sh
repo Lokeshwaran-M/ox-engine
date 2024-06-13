@@ -1,6 +1,6 @@
 
 # for pip update
-pipreqs .
+pipreqs . --force 
 
 python setup.py sdist 
 python setup.py bdist_wheel 

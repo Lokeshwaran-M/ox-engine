@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ox-engine',
-    version='0.0.99',
+    version='0.0.1',
     description='prompt data processer engine',
     author='Lokeshwaran M',
     author_email='lokeshwaran.m23072003@gmail.com',
