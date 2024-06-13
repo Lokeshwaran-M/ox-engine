@@ -45,7 +45,7 @@ pip install git+https://github.com/ox-ai/ox-engine.git
 │   ├── __init__.py
 │   ├── do.py
 │   ├── log.py
-|   └── vector.py
+│   └── vector.py
 ├── requirements.txt
 ├── setup.py
 └── test.ipynb
