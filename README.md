@@ -8,7 +8,7 @@ ox-engine core of assistant work flow and a prompt data processer engine
 pip install ox-engine
 ```
 
-### source :
+### build from source :
 
 ```
 pip install git+https://github.com/ox-ai/ox-engine.git
@@ -35,18 +35,8 @@ pip install git+https://github.com/ox-ai/ox-engine.git
 
 ```tree
 .
-├── LICENSE
-├── MANIFEST.in
-├── README.md
-├── build.sh
-├── docs.md
-├── main.py
-├── ox_engine
-│   ├── __init__.py
-│   ├── do.py
-│   ├── log.py
-│   └── vector.py
-├── requirements.txt
-├── setup.py
-└── test.ipynb
+├── __init__.py
+├── do.py
+├── log.py
+└── vector.py
 ```
