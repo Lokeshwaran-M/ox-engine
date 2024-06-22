@@ -77,13 +77,14 @@ class Log:
         Returns:
             None
         """
+        doc = self.set_doc(doc) if doc else self.get_doc()
+        uid = self.gen_uid(key, doc)
+
+
         if data == "" or data == None:
             raise ValueError("ox-db : no prompt is given")
         if not embeddings:
             embeddings = self.vec.encode(data)
-
-        doc = self.set_doc(doc) if doc else self.get_doc()
-        uid = self.gen_uid(key, doc)
 
         data_story = {
             "uid": uid,
