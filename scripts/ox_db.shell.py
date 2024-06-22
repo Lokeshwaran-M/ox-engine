@@ -2,7 +2,7 @@
 
 import sys
 import shlex
-from ox_engine.log import Log
+from ox_engine.db.log import Log
 
 
 

@@ -1,1 +1,1 @@
-from .log import Log 
+from .db.log import Log 

@@ -2,8 +2,8 @@ import os
 import bson
 import json
 from datetime import datetime
-from .vector import Vector
-from ox_engine import do
+from ox_engine.db.vector import Vector
+from ox_engine.util import do
 
 
 class Log:
@@ -20,9 +20,7 @@ class Log:
         """
         self.set_db(db, db_path)
         self.doc = None
-        self.doc_format = "bson"
-        self.doc_entry = 0
-
+        self.set_doc()
         self.vec = Vector()
 
     def set_db(self, db, db_path=None):
@@ -36,11 +34,15 @@ class Log:
         return self.db_path
 
     def set_doc(self, doc=None, doc_format="bson"):
-        if self.doc is not None and self.doc == doc:
-            return self.doc
         if doc is None:
-            doc = self.doc or f"log_{datetime.now():[%d%m%Y]}"
-        self.doc = doc
+            self.doc = self.doc or f"log_{datetime.now():[%d%m%Y]}"
+        elif self.doc:
+            if self.doc == doc:
+                return self.doc
+            else :
+                self.doc = doc
+        
+            
         self.doc_path = os.path.join(self.db_path, self.doc)
         os.makedirs(self.doc_path, exist_ok=True)
         if doc_format not in ["bson", "json"]:
@@ -115,7 +117,7 @@ class Log:
         all_none = all(var is None for var in [key, uid, time, date])
 
         doc = doc or (self.doc or "log_" + datetime.now().strftime("[%d%m%Y]"))
-        log_file = self._get_logfile_path(doc)
+    
 
         args = [key, uid, time, date]
         for i in range(len(args)) :
@@ -220,6 +222,7 @@ class Log:
 
     def _get_logfile_path(self, log_file):
 
+        self.doc_path = self.doc_path or os.path.join(self.db_path, self.doc)
         logfile_path = os.path.join(self.doc_path, f"{log_file}.{self.doc_format}")
         return logfile_path
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ox_engine.log import Log
+from ox_engine.db.log import Log
 
 log = Log("chat")
 log.set_doc("chat")
