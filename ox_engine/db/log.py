@@ -209,8 +209,6 @@ class Log:
             + "-"
             + key
             + "-"
-            + doc
-            + "-"
             + time
             + "-"
             + date
@@ -305,10 +303,10 @@ class Log:
             log_it = False
 
             uid_parts = uid.split("-")
-            uid_time_parts = uid_parts[3].split("_")[0].split(":") + [
-                uid_parts[3].split("_")[1]
+            uid_time_parts = uid_parts[2].split("_")[0].split(":") + [
+                uid_parts[2].split("_")[1]
             ]
-            uid_date_parts = uid_parts[4].split("_")
+            uid_date_parts = uid_parts[3].split("_")
 
             if uid_time_parts[: len(itime_parts) - 1] == itime_parts[:-1]:
                 if uid_time_parts[-1] == itime_parts[-1]:

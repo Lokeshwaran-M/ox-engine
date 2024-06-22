@@ -20,7 +20,9 @@ pip install git+https://github.com/ox-ai/ox-engine.git
 
 - refere [test.ipynb](./test.ipynb) for understanding the underlying usage [docs.md](./docs/docs.md) will be released after major release
 
-## db :
+## features
+
+### 1 ox-db :
 
 to start vector db (ox-db) api run below commend refer [docs](./docs/api.log.md)
 
