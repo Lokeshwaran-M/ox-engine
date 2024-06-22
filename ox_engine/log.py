@@ -5,8 +5,6 @@ from datetime import datetime
 from .vector import Vector
 from ox_engine import do
 
-vec = Vector()
-
 
 class Log:
 
@@ -23,6 +21,9 @@ class Log:
         self.set_db(db, db_path)
         self.doc = None
         self.doc_format = "bson"
+        self.doc_entry = 0
+
+        self.vec = Vector()
 
     def set_db(self, db, db_path=None):
         self.db = db
@@ -35,15 +36,36 @@ class Log:
         return self.db_path
 
     def set_doc(self, doc=None, doc_format="bson"):
-        self.doc = doc or self.doc
+        if self.doc is not None and self.doc == doc:
+            return self.doc
+        if doc is None:
+            doc = self.doc or f"log_{datetime.now():[%d%m%Y]}"
+        self.doc = doc
+        self.doc_path = os.path.join(self.db_path, self.doc)
+        os.makedirs(self.doc_path, exist_ok=True)
         if doc_format not in ["bson", "json"]:
             raise ValueError("doc_format must be 'bson' or 'json'")
         self.doc_format = doc_format
 
-    def get_doc(self):
-        return [self.doc,self.doc_format]
+        file_content = self.load_data(self.doc + ".index")
+        if "doc_entry" not in file_content:
+            file_content["doc_entry"] = 0
+            self.save_data(self.doc + ".index", file_content)
+        self.doc_entry = file_content["doc_entry"]
 
-    def push(self, data, embeddings=None, key=None, doc=None,):
+        return self.doc
+
+    def get_doc(self):
+        return self.doc or self.set_doc()
+
+    def push(
+        self,
+        data,
+        embeddings=None,
+        data_story=None,
+        key=None,
+        doc=None,
+    ):
         """
         Pushes data to the log file. Can be called with either data or both key and data.
 
@@ -55,30 +77,30 @@ class Log:
         Returns:
             None
         """
-        if data == "" or data==None:
+        if data == "" or data == None:
             raise ValueError("ox-db : no prompt is given")
-        data_store = {"data": data, "embeddings": embeddings}
+        if not embeddings:
+            embeddings = self.vec.encode(data)
 
-        doc = doc or self.doc
+        doc = self.set_doc(doc) if doc else self.get_doc()
         uid = self.gen_uid(key, doc)
-        splited_uid = uid.split("-")
-        doc_name = doc if doc else "lgd-" + splited_uid[3]
 
-        log_file = self._get_logfile_path(doc_name)
-        try:
-            with open(log_file, "rb+" if self.doc_format == "bson" else "r+") as file:
-                content = self._load_content(file)
-                if uid in content:
-                    uid = self.gen_uid(key, doc)
-                content[uid] = data_store
-                self._save_content(file, content)
-        except FileNotFoundError:
-            with open(log_file, "wb" if self.doc_format == "bson" else "w") as file:
-                self._save_content(file, {uid: data_store})
+        data_story = {
+            "uid": uid,
+            "key": key,
+            "doc": doc,
+            "time": datetime.now().strftime("%I:%M:%S_%p"),
+            "date": datetime.now().strftime("%d_%m_%Y"),
+            "vec_model":self.vec.md_name,
+            "discription":"",
+            "meta_data":[],
+        }
 
-        print(f"ox-db : logged data : {uid} \n{log_file}")
+        self._push(uid, data_story, doc + ".index")
+        self._push(uid, data, doc)
+        self._push(uid, embeddings, doc + ".ox-vec")
 
-    def pull(self, key=None, uid=None, time=None, doc=None, date=None):
+    def pull(self, key=None, uid=None, time=None, date=None, doc=None):
         """
         Retrieves a specific log entry from a BSON or JSON file based on date and time.
 
@@ -89,69 +111,48 @@ class Log:
         Returns:
             any: The log data associated with the specified key,time and doc,date or None if not found.
         """
-        all_none = all(var is None for var in [key, uid, time, doc, date])
+        all_none = all(var is None for var in [key, uid, time, date])
 
-        doc = doc or (self.doc or "lgd-" + datetime.now().strftime("%d_%m_%Y"))
+        doc = doc or (self.doc or "log_" + datetime.now().strftime("[%d%m%Y]"))
         log_file = self._get_logfile_path(doc)
+
+        args = [key, uid, time, date]
+        for i in range(len(args)) :
+            if type(args[i]) == str :
+                args[i] = [args[i]]
+            elif args[i]== None :
+                args[i] = []
+            
+        [keys, uids, times, dates] = args
 
         log_entries = []
 
-        try:
-            with open(log_file, "rb" if self.doc_format == "bson" else "r") as file:
-                content = self._load_content(file)
-                if all_none:
-                    log_entries = [
-                        {
-                            "uid": uid,
-                            "doc": doc,
-                            "data": data_store["data"],
-                            "embeddings": data_store["embeddings"],
-                        }
-                        for uid, data_store in content.items()
-                    ]
-          
-                elif uid in content:
-                    data_store = content[uid]
+        content = self.load_data(doc)
+        if all_none:
+            for uid, data in content.items():
+                if uid == "ox-db_init":
+                    continue
+                log_entries.append(
+                {
+                    "uid": uid,
+                    "data": data,
+                })
+
+        if len(uids)!=0 :
+            for uid in uids :
+                if uid in content:
+                    data = content[uid]
                     log_entries.append(
                         {
                             "uid": uid,
-                            "doc": doc,
-                            "data": data_store["data"],
-                            "embeddings": data_store["embeddings"],
+                            "data": data,
                         }
                     )
-              
-                else:
-                    log_entries.extend(
-                        self._search_by_segment(content, key, time, doc, date)
-                    )
 
-        except (FileNotFoundError, bson.errors.BSONError, json.JSONDecodeError):
-            print(f"ox-db : unable to locate log entry for {key} on {doc}.")
+        if any([key, time, date]):
+            log_entries.extend(self._search_by_segment(content, key, time,  date,doc))
 
         return log_entries
-    
-    def update(self, uid, data, embeddings=None,  doc=None,):
-     
-        data_store = {"data": data, "embeddings": embeddings}
-
-        doc = doc or self.doc
-
-        splited_uid = uid.split("-")
-        doc_name = doc if doc else "lgd-" + splited_uid[3]
-
-        log_file = self._get_logfile_path(doc_name)
-        try:
-            with open(log_file, "rb+" if self.doc_format == "bson" else "r+") as file:
-                content = self._load_content(file)
-                if uid in content:
-                    content[uid] = data_store
-                self._save_content(file, content)
-        except FileNotFoundError:
-            with open(log_file, "wb" if self.doc_format == "bson" else "w") as file:
-                self._save_content(file, {uid: data_store})
-
-        print(f"ox-db : updated data  {uid} \n{log_file}")
 
     def search(
         self,
@@ -160,36 +161,25 @@ class Log:
         key=None,
         uid=None,
         time=None,
-        doc=None,
         date=None,
-        return_embaddings=False,
+        doc=None,
     ):
+        doc = doc or (self.doc or "log_" + datetime.now().strftime("[%d%m%Y]"))
+        log_entries = self.pull(key, uid, time, date, doc + ".ox-vec")
+        log_entries_len = len(log_entries)
+        dataset = []
+        for i in range(log_entries_len):
+            dataset.append(log_entries[i]["data"])
 
-        query = vec.encode(query)
-        dataset = self.pull(key, uid, time, doc, date)
-        dataset_len = len(dataset)
-        sim_score = dict()
-        for i in range(dataset_len):
-            embaddings = dataset[i]["embeddings"]
-            if not embaddings:
-                embaddings = vec.encode(dataset[i]["data"])
-            sim_score[i] = Vector.sim(query, embaddings)
+        top_idx = self.vec.search(query, dataset, topn=topn)
 
-        sim_score_list = list(sim_score.items())
+        uids = []
 
-        sorted_sim_score_list = sorted(sim_score_list, key=lambda x: x[1])
-        result = []
-        reslen = topn if topn < dataset_len else dataset_len
-        for idx in range(reslen):
-            resdata = dataset[sorted_sim_score_list[idx][0]]
+        for idx in top_idx:
+            uids.append(log_entries[idx]["uid"])
+        resdata = self.pull(uid=uids,doc=doc)
 
-            resdata["sim_score"] = sorted_sim_score_list[idx][1]
-
-            if not return_embaddings:
-                resdata["embeddings"] = None
-            result.append(resdata)
-
-        return result
+        return resdata
 
     def show(
         self,
@@ -198,50 +188,23 @@ class Log:
         time=None,
         doc=None,
         date=None,
-        return_embaddings=False,
     ):
-        dataset = self.pull(key, uid, time, doc, date)
-        if return_embaddings:
-            return dataset
-        dataset_len = len(dataset)
-        result = []
-        for i in range(dataset_len):
-            resdata = dataset[i]
-            resdata["embeddings"] = None
-            result.append(resdata)
-        return result
-    
-    def embed_all(self,doc):
-               
-        doc = doc or (self.doc or "lgd-" + datetime.now().strftime("%d_%m_%Y"))
-        log_file = self._get_logfile_path(doc)
+        pass
 
-        try:
-            with open(log_file, "rb" if self.doc_format == "bson" else "r") as file:
-                content = self._load_content(file)
-                for uid, data_store in content.items():
-                    if not data_store["embeddings"]:
-                        content[uid]["embeddings"] = vec.encode(data_store["data"])
-
-        except (FileNotFoundError, bson.errors.BSONError, json.JSONDecodeError):
-            print(f"Unable to locate log entry for on {doc}.")  
-
-
-    def _get_logfile_path(self, doc):
-        doc_format = self.doc_format
-        return os.path.join(self.db_path, f"{doc}.{doc_format}")
-
-
+    def embed_all(self, doc):
+        pass
 
     def gen_uid(self, key=None, doc=None):
 
         time = datetime.now().strftime("%I:%M:%S_%p")
         date = datetime.now().strftime("%d_%m_%Y")
 
-        key = key if key else "key"
-        doc = doc if doc else "lgd"
+        key = key or "key"
+        doc = doc or (self.doc or "log")
         uid = (
-            key
+            str(self.doc_entry)
+            + "-"
+            + key
             + "-"
             + doc
             + "-"
@@ -254,30 +217,71 @@ class Log:
 
         return uid
 
-    def _load_content(self, file):
-        doc_format = self.doc_format
-        if doc_format == "bson":
-            file_content = file.read()
-            return bson.decode_all(file_content)[0] if file_content else {}
-        else:
-            is_empty = file.tell() == 0
-            return json.load(file) if is_empty else {}
+    def _get_logfile_path(self, log_file):
 
-    def _save_content(self, file, content):
-        doc_format = self.doc_format
-        if doc_format == "bson":
+        logfile_path = os.path.join(self.doc_path, f"{log_file}.{self.doc_format}")
+        return logfile_path
+
+    def _push(self, uid, data, log_file):
+
+        if data == "" or data == None:
+            raise ValueError("ox-db : no prompt is given")
+
+        file_content = self.load_data(log_file)
+        file_content[uid] = data
+        if "." in log_file:
+            if log_file.split(".")[1] == "index":
+                file_content["doc_entry"] += 1
+                self.doc_entry = file_content["doc_entry"]
+        self.save_data(log_file, file_content)
+
+        print(f"ox-db : logged data : {uid} \n{log_file}")
+
+    def load_data(self, log_file):
+        log_file_path = self._get_logfile_path(log_file)
+        try:
+            with open(
+                log_file_path, "rb+" if self.doc_format == "bson" else "r+"
+            ) as file:
+                if self.doc_format == "bson":
+                    file_content = file.read()
+                    return bson.decode_all(file_content)[0] if file_content else {}
+                else:
+                    is_empty = file.tell() == 0
+                    return json.load(file) if is_empty else {}
+        except FileNotFoundError:
+            file_content = {"ox-db_init": log_file}
+            self.save_data(log_file, file_content)
+            return file_content
+
+    def save_data(self, log_file, file_content):
+        log_file_path = self._get_logfile_path(log_file)
+
+        def write_file(file, content, format):
             file.seek(0)
             file.truncate()
-            file.write(bson.encode(content))
-        else:
-            file.seek(0)
-            file.truncate()
-            json.dump(content, file, indent=4)
+            if format == "bson":
+                file.write(bson.encode(content))
+            else:
+                json.dump(content, file, indent=4)
 
-    def _search_by_segment(self, content, key, time, doc, date):
+        try:
+            mode = "rb+" if self.doc_format == "bson" else "r+"
+            with open(log_file_path, mode) as file:
+                write_file(file, file_content, self.doc_format)
+        except FileNotFoundError:
+            mode = "wb" if self.doc_format == "bson" else "w"
+            with open(log_file_path, mode) as file:
+                write_file(file, file_content, self.doc_format)
+
+    def _search_by_segment(self, content, key, time,  date,doc):
         log_entries = []
-        itime_parts = [None,None,None,None]
-        idate_parts = [None,None,None,]
+        itime_parts = [None, None, None, None]
+        idate_parts = [
+            None,
+            None,
+            None,
+        ]
 
         if time:
             itime, ip = (
@@ -288,24 +292,27 @@ class Log:
             itime_parts = itime.split(":") + [ip]
 
         if date:
-            idate_parts = date.split("_") if "_" in date else date
-       
-        for uid, data_store in content.items():
+            idate_parts = date.split("_") if "_" in date else [date]
+
+        for uid, data in content.items():
+            if uid == "ox-db_init":
+                continue
+            
             log_it = False
 
             uid_parts = uid.split("-")
-            uid_time_parts = uid_parts[2].split("_")[0].split(":") + [
-                uid_parts[2].split("_")[1]
+            uid_time_parts = uid_parts[3].split("_")[0].split(":") + [
+                uid_parts[3].split("_")[1]
             ]
-            uid_date_parts = uid_parts[3].split("_")
+            uid_date_parts = uid_parts[4].split("_")
 
             if uid_time_parts[: len(itime_parts) - 1] == itime_parts[:-1]:
                 if uid_time_parts[-1] == itime_parts[-1]:
                     log_it = True
-              
+
             elif uid_date_parts[: len(idate_parts)] == idate_parts:
                 log_it = True
-          
+
             elif key == uid_parts[0]:
                 log_it = True
 
@@ -316,9 +323,7 @@ class Log:
                 log_entries.append(
                     {
                         "uid": uid,
-                        "doc": doc,
-                        "data": data_store["data"],
-                        "embeddings": data_store["embeddings"],
+                        "data": data,
                     }
                 )
 
