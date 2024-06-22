@@ -33,10 +33,10 @@ pip install git+https://github.com/ox-ai/ox-engine.git
 
 ## need to update:
 
-- push -> to accept list of datas
-- pull -> to accept docs
-- pull -> to accept list of keys, times, dates, docs
-- vector.search -> all sim metrics
+    - push -> to accept list of datas
+    - pull -> to accept docs
+    - pull -> to accept list of keys, times, dates, docs
+    - vector.search -> all sim metrics
 
 ## directory tree :
 
