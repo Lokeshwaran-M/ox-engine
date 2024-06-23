@@ -17,8 +17,8 @@ push data to a doc as uid value
 {
     uid:data
 }
-structure   : uid = i + key + time + date : rand_string(4)
-eg          : uid = 6-key-02:52:49_AM-23_06_2024-nY8o
+structure   : uid = i + key + rand_string(4)
+eg          : uid = '0-key-kvv8'
 """
 log.push("data-1")
 log.push("data-2")
@@ -33,6 +33,4 @@ log.pull(date="22_06")
 
 ```py
 log.search("data",2)
-
-
 ```
