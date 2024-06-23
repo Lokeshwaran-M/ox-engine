@@ -33,6 +33,8 @@ class Log:
         )
         os.makedirs(self.db_path, exist_ok=True)  # Create directory if it doesn't exist
 
+        return db
+
     def get_db(self):
         return self.db_path
 
@@ -100,6 +102,8 @@ class Log:
         self._push(uid, data_story, doc + ".index")
         self._push(uid, data, doc)
         self._push(uid, embeddings, doc + ".ox-vec")
+
+        return uid
 
     def pull(
         self,
@@ -215,27 +219,6 @@ class Log:
 
         return uid
 
-    def _get_logfile_path(self, log_file):
-
-        self.doc_path = self.doc_path or os.path.join(self.db_path, self.doc)
-        logfile_path = os.path.join(self.doc_path, f"{log_file}.{self.doc_format}")
-        return logfile_path
-
-    def _push(self, uid, data, log_file):
-
-        if data == "" or data == None:
-            raise ValueError("ox-db : no prompt is given")
-
-        file_content = self.load_data(log_file)
-        file_content[uid] = data
-        if "." in log_file:
-            if log_file.split(".")[1] == "index":
-                file_content["ox-db_init"]["doc_entry"] += 1
-                self.doc_entry = file_content["ox-db_init"]["doc_entry"]
-        self.save_data(log_file, file_content)
-
-        print(f"ox-db : logged data : {uid} \n{log_file}")
-
     def load_data(self, log_file):
         log_file_path = self._get_logfile_path(log_file)
         try:
@@ -272,28 +255,6 @@ class Log:
             mode = "wb" if self.doc_format == "bson" else "w"
             with open(log_file_path, mode) as file:
                 write_file(file, file_content, self.doc_format)
-    @classmethod
-    def _convert_input(cls,*args: Union[str, list]) -> list:
-        """
-        Converts input arguments (any number) to lists if they are strings.
-
-        Args:
-            *args: Variable number of arguments (type hint: Union[str, list]).
-
-        Returns:
-            A list containing the converted arguments.
-        """
-
-        converted_args = []
-        for arg in args:
-            if isinstance(arg, str):
-                converted_args.append([arg])
-            elif arg == None:
-                converted_args.append([])
-            else:
-                converted_args.append(arg)
-
-        return converted_args
 
     def search_uid(self, doc=None, key=None, time=None, date=None):
         doc = doc or (self.doc or "log-" + datetime.now().strftime("[%d_%m_%Y]"))
@@ -341,3 +302,49 @@ class Log:
                 uids.append(uid)
 
         return uids
+
+
+    def _get_logfile_path(self, log_file):
+
+        self.doc_path = self.doc_path or os.path.join(self.db_path, self.doc)
+        logfile_path = os.path.join(self.doc_path, f"{log_file}.{self.doc_format}")
+        return logfile_path
+
+    def _push(self, uid, data, log_file):
+
+        if data == "" or data == None:
+            raise ValueError("ox-db : no prompt is given")
+
+        file_content = self.load_data(log_file)
+        file_content[uid] = data
+        if "." in log_file:
+            if log_file.split(".")[1] == "index":
+                file_content["ox-db_init"]["doc_entry"] += 1
+                self.doc_entry = file_content["ox-db_init"]["doc_entry"]
+        self.save_data(log_file, file_content)
+
+        print(f"ox-db : logged data : {uid} \n{log_file}")
+
+
+    @classmethod
+    def _convert_input(cls,*args: Union[str, list]) -> list:
+        """
+        Converts input arguments (any number) to lists if they are strings.
+
+        Args:
+            *args: Variable number of arguments (type hint: Union[str, list]).
+
+        Returns:
+            A list containing the converted arguments.
+        """
+
+        converted_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                converted_args.append([arg])
+            elif arg == None:
+                converted_args.append([])
+            else:
+                converted_args.append(arg)
+
+        return converted_args
