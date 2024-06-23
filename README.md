@@ -46,8 +46,6 @@ uvicorn ox_engine.api.log:app
 ## need to update :
 
     - push -> to accept list of datas
-    - pull -> to accept docs
-    - pull -> to accept list of keys, times, dates, docs
     - vector.search -> all sim metrics
 
 ## directory tree :
