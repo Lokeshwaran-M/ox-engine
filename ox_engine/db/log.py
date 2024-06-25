@@ -3,7 +3,7 @@ import bson
 import json
 from datetime import datetime
 from typing import TypeAlias, Union
-from ox_engine.db.vector import Vector
+from ox_engine.ai.vector import Model
 from ox_engine.util import do
 
 strOrList: TypeAlias = Union[str, list]
@@ -24,7 +24,7 @@ class Log:
         self.set_db(db, db_path)
         self.doc = None
         self.set_doc()
-        self.vec = Vector()
+        self.vec = Model()
 
     def set_db(self, db, db_path=None):
         self.db = db
@@ -88,18 +88,17 @@ class Log:
         if not embeddings:
             embeddings = self.vec.encode(data)
 
-        data_story = {
+        index_data = {
             "uid": uid,
             "key": key or "key",
             "doc": doc,
             "time": datetime.now().strftime("%I:%M:%S_%p"),
             "date": datetime.now().strftime("%d_%m_%Y"),
             "vec_model": self.vec.md_name,
-            "discription": "",
-            "meta_data": [],
+            "discription": data_story,
         }
 
-        self._push(uid, data_story, doc + ".index")
+        self._push(uid, index_data, doc + ".index")
         self._push(uid, data, doc)
         self._push(uid, embeddings, doc + ".ox-vec")
 
@@ -330,12 +329,6 @@ class Log:
     def _convert_input(cls,*args: Union[str, list]) -> list:
         """
         Converts input arguments (any number) to lists if they are strings.
-
-        Args:
-            *args: Variable number of arguments (type hint: Union[str, list]).
-
-        Returns:
-            A list containing the converted arguments.
         """
 
         converted_args = []

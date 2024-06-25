@@ -2,12 +2,12 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 
 
-class Vector:
+class Model:
     def __init__(self) -> None:
         self.md_name = "sentence-transformers/all-MiniLM-L6-v2"
         self.model = SentenceTransformer(self.md_name)
 
-    def set_model(self, md_name):
+    def load(self, md_name:str):
         self.md_name = md_name
         self.model = SentenceTransformer(self.md_name)
 

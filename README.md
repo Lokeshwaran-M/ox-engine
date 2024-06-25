@@ -18,7 +18,7 @@ pip install git+https://github.com/ox-ai/ox-engine.git
 
 ## docs :
 
-- refere [test.ipynb](./test.ipynb) for understanding the underlying usage [docs.md](./docs/docs.md) will be released after major release
+- refere [test.log.ipynb](./test.log.ipynb.ipynb) for understanding the underlying usage [docs.md](./docs/docs.md) will be released after major release
 
 ## features
 
@@ -43,23 +43,23 @@ uvicorn ox_engine.api.log:app
 | plugin integration        |        | system to write add-on to intract with vector data base |
 | data structurer as plugin |        | structure raw data to custom format                     |
 
-## need to update :
-
-    - push -> to accept list of datas
-    - vector.search -> all sim metrics
 
 ## directory tree :
 
 ```tree
 .
 ├── __init__.py
+├── ai
+│   ├── llm.py
+│   ├── md_path.py
+│   ├── prompt.py
+│   └── vector.py
 ├── api
 │   ├── __init__.py
 │   └── log.py
 ├── db
 │   ├── __init__.py
-│   ├── log.py
-│   └── vector.py
+│   └── log.py
 └── util
     ├── __init__.py
     └── do.py
