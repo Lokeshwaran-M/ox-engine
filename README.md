@@ -1,47 +1,48 @@
 # ox-engine
 
+# about :
+
 ox-engine core of assistant work flow and a prompt data processer engine
 
-## to install :
+> under development not implemented complete system
 
-always build from source for latest and bug free version
-
-```
-pip install ox-engine
-```
 
 ### build from source :
 
 ```
 pip install git+https://github.com/ox-ai/ox-engine.git
 ```
+## Installation:
+
+always build from source for latest and bug free version
+
+> note : install all pre requisite and before installing ox-engine
+
+### pre requisite
+
++  **[ox-doc](https://github.com/ox-ai/ox-doc.git)**
++  **[ox-db](https://github.com/ox-ai/ox-db.git)**
+
+```
+pip install git+https://github.com/ox-ai/ox-db.git
+pip install git+https://github.com/ox-ai/ox-doc.git
+```
+
+### build from source
+
+```
+pip install git+https://github.com/ox-ai/ox-engine.git
+```
+### from pip
+```
+pip install ox-engine
+```
+
 
 ## docs :
 
 - refere [test.log.ipynb](./test.log.ipynb.ipynb) for understanding the underlying usage [docs.md](./docs/docs.md) will be released after major release
 
-## features
-
-### 1 ox-db :
-
-to start vector db (ox-db) api run below commend refer [docs](./docs/api.log.md)
-
-```
-uvicorn ox_engine.api.log:app
-```
-
-## lib implementation :
-
-| Title                     | Status | Description                                             |
-| ------------------------- | ------ | ------------------------------------------------------- |
-| log                       | ip     | log data base system                                    |
-| vector integration        | ip     | log vecctor data base                                   |
-| query engine              | ip     | vector search                                           |
-| demon search engine       |        | optimized search                                        |
-| tree load                 |        | vector storage system                                   |
-| key lang translator       |        | natural lang to key lang                                |
-| plugin integration        |        | system to write add-on to intract with vector data base |
-| data structurer as plugin |        | structure raw data to custom format                     |
 
 
 ## directory tree :
@@ -54,13 +55,6 @@ uvicorn ox_engine.api.log:app
 │   ├── md_path.py
 │   ├── prompt.py
 │   └── vector.py
-├── api
-│   ├── __init__.py
-│   └── log.py
-├── db
-│   ├── __init__.py
-│   └── log.py
 └── util
-    ├── __init__.py
-    └── do.py
+    └── __init__.py
 ```

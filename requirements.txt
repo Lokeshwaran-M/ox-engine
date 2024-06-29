@@ -4,3 +4,5 @@ pymongo==4.7.3
 sentence_transformers==3.0.1
 setuptools==68.1.2
 transformers==4.41.2
+ox-db @ git+https://github.com/ox-ai/ox-db.git#egg=ox-db
+ox-doc @ git+https://github.com/ox-ai/ox-doc.git#egg=ox-doc
